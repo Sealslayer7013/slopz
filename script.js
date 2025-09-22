@@ -10,12 +10,28 @@ const debugPanel = document.getElementById('debugPanel');
 const debugText = document.getElementById('debugText');
 const resultsVideo = document.getElementById('resultsVideo');
 const resultsCanvas = document.getElementById('resultsCanvas');
+const videoPlayerContainer = document.getElementById('videoPlayerContainer');
 const totalFrames = document.getElementById('totalFrames');
 const videoTime = document.getElementById('videoTime');
 const currentFrame = document.getElementById('currentFrame');
 const frameDataStatus = document.getElementById('frameDataStatus');
 
 const SKI_LANDMARK_INDICES = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
+
+const SKI_SKELETON_CONNECTIONS = [
+    [11, 12], // Shoulder to shoulder
+    [11, 13], // Left arm
+    [13, 15],
+    [12, 14], // Right arm
+    [14, 16],
+    [23, 24], // Hip to hip
+    [11, 23], // Left torso
+    [12, 24], // Right torso
+    [23, 25], // Left leg
+    [25, 27],
+    [24, 26], // Right leg
+    [26, 28]
+];
 
 // Initialize MediaPipe Pose
 const pose = new Pose({
@@ -71,20 +87,26 @@ function onPoseResults(results) {
 }
 
 analyzeBtn.addEventListener('click', () => {
-    if (uploadedFile) {
-        console.log('Starting analysis...');
-        resultsSection.style.display = 'none';
-        feedbackText.innerHTML = 'Analyzing... please wait.';
-        resultsSection.style.display = 'block';
-
-        const videoUrl = URL.createObjectURL(uploadedFile);
-        inputVideo.src = videoUrl;
-
-        inputVideo.addEventListener('loadeddata', processVideo);
-
-    } else {
+    if (!uploadedFile) {
         alert('Please upload a video file first.');
+        return;
     }
+
+    // 1. Reset state for a new analysis
+    console.log('Starting analysis...');
+    allFrameLandmarks = [];
+    videoPlayerContainer.style.display = 'none';
+    debugPanel.style.display = 'none';
+    toggleDebugBtn.innerText = 'Show Advanced Analytics';
+
+    // 2. Show "Analyzing..." message
+    feedbackText.innerHTML = 'Analyzing... please wait. This may take a moment.';
+    resultsSection.style.display = 'block';
+
+    // 3. Start the background processing
+    const videoUrl = URL.createObjectURL(uploadedFile);
+    inputVideo.src = videoUrl;
+    inputVideo.addEventListener('loadeddata', processVideo);
 });
 
 async function processVideo() {
@@ -96,13 +118,12 @@ async function processVideo() {
     outputCanvas.width = video.videoWidth;
     outputCanvas.height = video.videoHeight;
 
-    let frame = 0;
     const frameRate = 30; // Assuming 30fps for analysis
     const duration = video.duration;
-
     video.currentTime = 0;
 
-    processingPromise = new Promise(resolve => {
+    // Use a new promise for each analysis
+    new Promise(resolve => {
         video.addEventListener('seeked', async function onSeeked() {
             if (video.currentTime >= duration) {
                 video.removeEventListener('seeked', onSeeked);
@@ -110,44 +131,36 @@ async function processVideo() {
                 resolve();
                 return;
             }
-
             canvasCtx.drawImage(video, 0, 0, outputCanvas.width, outputCanvas.height);
             await pose.send({ image: outputCanvas });
-
-            // Seek to the next frame
             video.currentTime += 1 / frameRate;
-            frame++;
         });
-
         // Start the process
         video.currentTime = 0;
-    });
-
-    // After processing is done, load video into player and calculate metrics
-    processingPromise.then(() => {
+    }).then(() => {
+        // 4. Analysis is complete, now show the results.
         console.log('Analysis complete. Preparing results player...');
-
-        // Load the video for playback
-        const videoUrl = URL.createObjectURL(uploadedFile);
-        resultsVideo.src = videoUrl;
 
         // Calculate metrics and generate feedback
         const metrics = calculateSkiMetrics(allFrameLandmarks);
         const feedback = generateFeedback(metrics);
 
-        // Display text results
+        // Update text results
         feedbackText.innerText = feedback;
         debugText.innerText = JSON.stringify(metrics, null, 2);
 
-        // Make results visible
-        resultsSection.style.display = 'block';
+        // Set up the results video player
+        const videoUrl = URL.createObjectURL(uploadedFile);
+        resultsVideo.src = videoUrl;
 
         // Add event listeners to the results video to trigger the draw loop
         resultsVideo.addEventListener('play', drawLoop);
         resultsVideo.addEventListener('seeked', drawLoop);
-
-        // Don't clean up landmarks immediately, drawLoop needs them
-        // allFrameLandmarks = [];
+        resultsVideo.addEventListener('loadeddata', () => {
+            // Show the player and draw the first frame
+            videoPlayerContainer.style.display = 'block';
+            drawLoop();
+        });
     });
 }
 
@@ -238,29 +251,35 @@ toggleDebugBtn.addEventListener('click', () => {
 
 function drawLoop() {
     const canvasCtx = resultsCanvas.getContext('2d');
-    const video = resultsVideo;
 
-    // Set canvas size to video size
-    resultsCanvas.width = video.videoWidth;
-    resultsCanvas.height = video.videoHeight;
-
-    const frameIndex = Math.floor(video.currentTime * 30); // Assuming 30fps
-    const landmarks = allFrameLandmarks[frameIndex];
+    // Calculate the current frame index
+    const frameIndex = Math.floor(resultsVideo.currentTime * 30); // Assuming 30fps
 
     // Update diagnostics
-    videoTime.innerHTML = video.currentTime.toFixed(2);
+    videoTime.innerHTML = resultsVideo.currentTime.toFixed(2);
     currentFrame.innerHTML = frameIndex;
+
+    // Get the landmark data for the current frame
+    const landmarks = allFrameLandmarks[frameIndex];
+
+    // Update the status diagnostic
     frameDataStatus.innerHTML = landmarks ? 'Yes' : 'No';
 
+    // Setup the canvas
+    resultsCanvas.width = resultsVideo.videoWidth;
+    resultsCanvas.height = resultsVideo.videoHeight;
+
+    // Clear the canvas and draw the skeleton IF landmarks exist
     canvasCtx.clearRect(0, 0, resultsCanvas.width, resultsCanvas.height);
-
     if (landmarks) {
-        drawConnectors(canvasCtx, landmarks, Pose.POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 4 });
-        drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', lineWidth: 2 });
+        // Use our simplified skeleton connections
+        drawConnectors(canvasCtx, landmarks, SKI_SKELETON_CONNECTIONS, { color: '#00FF00', lineWidth: 4 });
+
+        // Filter out null landmarks before drawing the dots
+        const mainBodyLandmarks = landmarks.filter(landmark => landmark !== null);
+        drawLandmarks(canvasCtx, mainBodyLandmarks, { color: '#FF0000', radius: 5 });
     }
 
-    // Call the next frame
-    if (!video.paused && !video.ended) {
-        requestAnimationFrame(drawLoop);
-    }
+    // Keep the loop running
+    requestAnimationFrame(drawLoop);
 }
