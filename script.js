@@ -1,3 +1,5 @@
+import { proTurnData } from './pro_model.js';
+
 // Get DOM element references
 const videoUpload = document.getElementById('videoUpload');
 const analyzeBtn = document.getElementById('analyzeBtn');
@@ -15,6 +17,7 @@ const totalFrames = document.getElementById('totalFrames');
 const videoTime = document.getElementById('videoTime');
 const currentFrame = document.getElementById('currentFrame');
 const frameDataStatus = document.getElementById('frameDataStatus');
+const similarityScoreElement = document.getElementById('similarity-score');
 
 const SKI_LANDMARK_INDICES = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
 
@@ -145,8 +148,23 @@ async function processVideo() {
         const metrics = calculateSkiMetrics(allFrameLandmarks);
         const feedback = generateFeedback(metrics);
 
+        // --- Pro Model Comparison ---
+        const frameScores = [];
+        for (let i = 0; i < allFrameLandmarks.length; i++) {
+            // Use modulo to loop the pro data if the user's video is longer
+            const proFrameIndex = i % proTurnData.length;
+            const userPose = allFrameLandmarks[i];
+            const proPose = proTurnData[proFrameIndex];
+            const score = calculatePoseSimilarity(userPose, proPose);
+            frameScores.push(score);
+        }
+        const averageScore = frameScores.reduce((a, b) => a + b, 0) / (frameScores.length || 1);
+        console.log(`Average Pro Similarity Score: ${averageScore}`);
+        // --------------------------
+
         // Update text results
         feedbackText.innerText = feedback;
+        similarityScoreElement.innerHTML = "Pro Similarity Score: " + Math.round(averageScore) + "%";
         debugText.innerText = JSON.stringify(metrics, null, 2);
 
         // Set up the results video player
@@ -280,6 +298,45 @@ function drawLoop() {
         drawLandmarks(canvasCtx, mainBodyLandmarks, { color: '#FF0000', radius: 5 });
     }
 
-    // Keep the loop running
-    requestAnimationFrame(drawLoop);
+    // Keep the loop running if the video is playing
+    if (!resultsVideo.paused && !resultsVideo.ended) {
+        requestAnimationFrame(drawLoop);
+    }
+}
+
+function calculatePoseSimilarity(poseA, poseB) {
+    if (!poseA || !poseB) {
+        return 0; // Cannot compare if one pose is missing
+    }
+
+    let totalDistance = 0;
+    let landmarksCompared = 0;
+
+    for (const i of SKI_LANDMARK_INDICES) {
+        const landmarkA = poseA[i];
+        const landmarkB = poseB[i];
+
+        if (landmarkA && landmarkB) {
+            const dx = landmarkA.x - landmarkB.x;
+            const dy = landmarkA.y - landmarkB.y;
+            const dz = landmarkA.z - landmarkB.z;
+            totalDistance += Math.sqrt(dx*dx + dy*dy + dz*dz);
+            landmarksCompared++;
+        }
+    }
+
+    if (landmarksCompared === 0) {
+        return 0;
+    }
+
+    // Normalize the distance. The average distance per landmark.
+    const averageDistance = totalDistance / landmarksCompared;
+
+    // Convert distance to a similarity score (0-100).
+    // This is a heuristic. A smaller averageDistance should result in a higher score.
+    // We'll say an average distance of 0.1 is "pretty bad" (e.g., 50% similar)
+    // and 0.2 or more is "very different" (e.g., 0% similar).
+    const similarity = Math.max(0, 100 - (averageDistance * 500)); // Multiplier 500 is a magic number
+
+    return similarity;
 }
