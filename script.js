@@ -5,6 +5,9 @@ const resultsSection = document.getElementById('resultsSection');
 const inputVideo = document.getElementById('inputVideo');
 const outputCanvas = document.getElementById('outputCanvas');
 const feedbackText = document.getElementById('feedbackText');
+const toggleDebugBtn = document.getElementById('toggleDebugBtn');
+const debugPanel = document.getElementById('debugPanel');
+const debugText = document.getElementById('debugText');
 
 // Initialize MediaPipe Pose
 const pose = new Pose({
@@ -117,6 +120,9 @@ async function processVideo() {
         feedbackText.innerText = feedback;
         resultsSection.style.display = 'block';
 
+        // Populate the debug panel
+        debugText.innerText = JSON.stringify(metrics, null, 2);
+
         // Clean up for next run
         allLandmarks = [];
     });
@@ -186,3 +192,15 @@ function generateFeedback(metrics) {
 
     return feedback;
 }
+
+toggleDebugBtn.addEventListener('click', () => {
+    // Check the computed style to get the actual display status
+    const isHidden = window.getComputedStyle(debugPanel).display === 'none';
+    if (isHidden) {
+        debugPanel.style.display = 'block';
+        toggleDebugBtn.innerText = 'Hide Advanced Analytics';
+    } else {
+        debugPanel.style.display = 'none';
+        toggleDebugBtn.innerText = 'Show Advanced Analytics';
+    }
+});
