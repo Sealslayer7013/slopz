@@ -8,6 +8,8 @@ const feedbackText = document.getElementById('feedbackText');
 const toggleDebugBtn = document.getElementById('toggleDebugBtn');
 const debugPanel = document.getElementById('debugPanel');
 const debugText = document.getElementById('debugText');
+const resultsVideo = document.getElementById('resultsVideo');
+const resultsCanvas = document.getElementById('resultsCanvas');
 
 // Initialize MediaPipe Pose
 const pose = new Pose({
@@ -36,23 +38,12 @@ videoUpload.addEventListener('change', (event) => {
     }
 });
 
-let allLandmarks = [];
+let allFrameLandmarks = [];
 let processingPromise = null;
 
 function onPoseResults(results) {
-    if (results.poseLandmarks) {
-        const landmarks = results.poseLandmarks;
-        allLandmarks.push({
-            leftShoulder: landmarks[11],
-            rightShoulder: landmarks[12],
-            leftHip: landmarks[23],
-            rightHip: landmarks[24],
-            leftKnee: landmarks[25],
-            rightKnee: landmarks[26],
-            leftAnkle: landmarks[27],
-            rightAnkle: landmarks[28],
-        });
-    }
+    // Store the entire landmarks object for each frame
+    allFrameLandmarks.push(results.poseLandmarks);
 }
 
 analyzeBtn.addEventListener('click', () => {
@@ -108,23 +99,31 @@ async function processVideo() {
         video.currentTime = 0;
     });
 
-    // After processing is done, calculate metrics and generate feedback
+    // After processing is done, load video into player and calculate metrics
     processingPromise.then(() => {
-        console.log('Calculating metrics...');
-        const metrics = calculateSkiMetrics(allLandmarks);
-        console.log('Metrics:', metrics);
+        console.log('Analysis complete. Preparing results player...');
+
+        // Load the video for playback
+        const videoUrl = URL.createObjectURL(uploadedFile);
+        resultsVideo.src = videoUrl;
+
+        // Calculate metrics and generate feedback
+        const metrics = calculateSkiMetrics(allFrameLandmarks);
         const feedback = generateFeedback(metrics);
-        console.log('Feedback:', feedback);
 
-        // Display the results
+        // Display text results
         feedbackText.innerText = feedback;
-        resultsSection.style.display = 'block';
-
-        // Populate the debug panel
         debugText.innerText = JSON.stringify(metrics, null, 2);
 
-        // Clean up for next run
-        allLandmarks = [];
+        // Make results visible
+        resultsSection.style.display = 'block';
+
+        // Add event listeners to the results video to trigger the draw loop
+        resultsVideo.addEventListener('play', drawLoop);
+        resultsVideo.addEventListener('seeked', drawLoop);
+
+        // Don't clean up landmarks immediately, drawLoop needs them
+        // allFrameLandmarks = [];
     });
 }
 
@@ -141,25 +140,33 @@ function calculateSkiMetrics(landmarksData) {
     const kneeBends = [];
     const torsoAngles = [];
 
+    const p = {
+        leftShoulder: 11, rightShoulder: 12,
+        leftHip: 23, rightHip: 24,
+        leftKnee: 25, rightKnee: 26,
+        leftAnkle: 27, rightAnkle: 28,
+    };
+
     for (const frame of landmarksData) {
+        if (!frame) continue; // Skip frames where no landmarks were detected
+
         // Calculate left knee bend
-        if (frame.leftHip && frame.leftKnee && frame.leftAnkle) {
-            kneeBends.push(calculateAngle(frame.leftHip, frame.leftKnee, frame.leftAnkle));
+        if (frame[p.leftHip] && frame[p.leftKnee] && frame[p.leftAnkle]) {
+            kneeBends.push(calculateAngle(frame[p.leftHip], frame[p.leftKnee], frame[p.leftAnkle]));
         }
         // Calculate right knee bend
-        if (frame.rightHip && frame.rightKnee && frame.rightAnkle) {
-            kneeBends.push(calculateAngle(frame.rightHip, frame.rightKnee, frame.rightAnkle));
+        if (frame[p.rightHip] && frame[p.rightKnee] && frame[p.rightAnkle]) {
+            kneeBends.push(calculateAngle(frame[p.rightHip], frame[p.rightKnee], frame[p.rightAnkle]));
         }
 
         // Calculate torso angle (shoulder-hip line relative to vertical)
-        // We'll average the left and right sides
-        if (frame.leftShoulder && frame.leftHip) {
-            const verticalPoint = { x: frame.leftHip.x, y: frame.leftHip.y - 1 }; // A point directly above the hip
-            torsoAngles.push(calculateAngle(frame.leftShoulder, frame.leftHip, verticalPoint));
+        if (frame[p.leftShoulder] && frame[p.leftHip]) {
+            const verticalPoint = { x: frame[p.leftHip].x, y: frame[p.leftHip].y - 1 };
+            torsoAngles.push(calculateAngle(frame[p.leftShoulder], frame[p.leftHip], verticalPoint));
         }
-        if (frame.rightShoulder && frame.rightHip) {
-            const verticalPoint = { x: frame.rightHip.x, y: frame.rightHip.y - 1 };
-            torsoAngles.push(calculateAngle(frame.rightShoulder, frame.rightHip, verticalPoint));
+        if (frame[p.rightShoulder] && frame[p.rightHip]) {
+            const verticalPoint = { x: frame[p.rightHip].x, y: frame[p.rightHip].y - 1 };
+            torsoAngles.push(calculateAngle(frame[p.rightShoulder], frame[p.rightHip], verticalPoint));
         }
     }
 
@@ -204,3 +211,27 @@ toggleDebugBtn.addEventListener('click', () => {
         toggleDebugBtn.innerText = 'Show Advanced Analytics';
     }
 });
+
+function drawLoop() {
+    const canvasCtx = resultsCanvas.getContext('2d');
+    const video = resultsVideo;
+
+    // Set canvas size to video size
+    resultsCanvas.width = video.videoWidth;
+    resultsCanvas.height = video.videoHeight;
+
+    const frameIndex = Math.floor(video.currentTime * 30); // Assuming 30fps
+    const landmarks = allFrameLandmarks[frameIndex];
+
+    canvasCtx.clearRect(0, 0, resultsCanvas.width, resultsCanvas.height);
+
+    if (landmarks) {
+        drawConnectors(canvasCtx, landmarks, Pose.POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 4 });
+        drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', lineWidth: 2 });
+    }
+
+    // Call the next frame
+    if (!video.paused && !video.ended) {
+        requestAnimationFrame(drawLoop);
+    }
+}

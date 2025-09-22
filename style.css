@@ -78,6 +78,32 @@ h2 {
     white-space: pre-wrap; /* To respect newlines in the feedback string */
 }
 
+#videoPlayerContainer {
+    position: relative;
+    width: 100%;
+    max-width: 480px; /* Or adjust as needed */
+    margin: 0 auto 20px auto;
+    background: #000;
+}
+
+#resultsVideo, #resultsCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#resultsVideo {
+    position: relative; /* To give the container its size */
+    z-index: 1;
+}
+
+#resultsCanvas {
+    z-index: 2; /* To sit on top of the video */
+    pointer-events: none; /* To allow clicks to go through to the video controls */
+}
+
 #toggleDebugBtn {
     background-color: #6c757d;
     color: white;
