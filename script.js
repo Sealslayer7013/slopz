@@ -145,7 +145,7 @@ async function processVideo() {
         video.currentTime = 0;
     }).then(() => {
         // 4. Analysis is complete, now show the results.
-        console.log('Analysis complete. Preparing results player...');
+        console.log("Step 1: Video analysis complete. Total frames processed:", allFrameLandmarks.length);
 
         // Update pro frames diagnostic
         proFrames.innerHTML = proTurnData.length;
@@ -155,6 +155,7 @@ async function processVideo() {
         const feedback = generateFeedback(metrics);
 
         // --- Pro Model Comparison ---
+        console.log("Step 3: Starting Pro Model comparison loop.");
         const frameScores = [];
         for (let i = 0; i < allFrameLandmarks.length; i++) {
             const proFrameIndex = i % proTurnData.length;
@@ -177,6 +178,7 @@ async function processVideo() {
         debugText.innerText = JSON.stringify(metrics, null, 2);
 
         // Set up the results video player
+        console.log("Step 2: Preparing to load video into results player.");
         const videoUrl = URL.createObjectURL(uploadedFile);
         resultsVideo.src = videoUrl;
 
@@ -277,6 +279,7 @@ toggleDebugBtn.addEventListener('click', () => {
 });
 
 function drawLoop() {
+    console.log("Step 4: drawLoop() function is running.");
     const canvasCtx = resultsCanvas.getContext('2d');
 
     // Calculate the current frame index
