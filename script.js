@@ -18,6 +18,9 @@ const videoTime = document.getElementById('videoTime');
 const currentFrame = document.getElementById('currentFrame');
 const frameDataStatus = document.getElementById('frameDataStatus');
 const similarityScoreElement = document.getElementById('similarity-score');
+const proFrames = document.getElementById('proFrames');
+const rawDifference = document.getElementById('rawDifference');
+const frameSimilarity = document.getElementById('frameSimilarity');
 
 const SKI_LANDMARK_INDICES = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
 
@@ -144,6 +147,9 @@ async function processVideo() {
         // 4. Analysis is complete, now show the results.
         console.log('Analysis complete. Preparing results player...');
 
+        // Update pro frames diagnostic
+        proFrames.innerHTML = proTurnData.length;
+
         // Calculate metrics and generate feedback
         const metrics = calculateSkiMetrics(allFrameLandmarks);
         const feedback = generateFeedback(metrics);
@@ -151,12 +157,15 @@ async function processVideo() {
         // --- Pro Model Comparison ---
         const frameScores = [];
         for (let i = 0; i < allFrameLandmarks.length; i++) {
-            // Use modulo to loop the pro data if the user's video is longer
             const proFrameIndex = i % proTurnData.length;
             const userPose = allFrameLandmarks[i];
             const proPose = proTurnData[proFrameIndex];
-            const score = calculatePoseSimilarity(userPose, proPose);
-            frameScores.push(score);
+            const result = calculatePoseSimilarity(userPose, proPose);
+            frameScores.push(result.similarity);
+
+            // Update live diagnostics for the last processed frame
+            rawDifference.innerHTML = result.rawDifference.toFixed(4);
+            frameSimilarity.innerHTML = result.similarity.toFixed(2);
         }
         const averageScore = frameScores.reduce((a, b) => a + b, 0) / (frameScores.length || 1);
         console.log(`Average Pro Similarity Score: ${averageScore}`);
@@ -305,38 +314,28 @@ function drawLoop() {
 }
 
 function calculatePoseSimilarity(poseA, poseB) {
-    if (!poseA || !poseB) {
-        return 0; // Cannot compare if one pose is missing
-    }
-
-    let totalDistance = 0;
+    let totalDifference = 0;
     let landmarksCompared = 0;
 
-    for (const i of SKI_LANDMARK_INDICES) {
-        const landmarkA = poseA[i];
-        const landmarkB = poseB[i];
+    // Use the landmark indices we defined earlier
+    for (const index of SKI_LANDMARK_INDICES) {
+        const markA = poseA[index];
+        const markB = poseB[index];
 
-        if (landmarkA && landmarkB) {
-            const dx = landmarkA.x - landmarkB.x;
-            const dy = landmarkA.y - landmarkB.y;
-            const dz = landmarkA.z - landmarkB.z;
-            totalDistance += Math.sqrt(dx*dx + dy*dy + dz*dz);
+        if (markA && markB) {
+            let diff = Math.sqrt(Math.pow(markA.x - markB.x, 2) + Math.pow(markA.y - markB.y, 2));
+            totalDifference += diff;
             landmarksCompared++;
         }
     }
 
     if (landmarksCompared === 0) {
-        return 0;
+        return { rawDifference: 0, similarity: 0 };
     }
 
-    // Normalize the distance. The average distance per landmark.
-    const averageDistance = totalDistance / landmarksCompared;
+    const averageDifference = totalDifference / landmarksCompared;
+    // Convert difference (0 is perfect) to similarity (100 is perfect)
+    const similarity = Math.max(0, 100 - (averageDifference * 200)); // Multiplier can be tuned
 
-    // Convert distance to a similarity score (0-100).
-    // This is a heuristic. A smaller averageDistance should result in a higher score.
-    // We'll say an average distance of 0.1 is "pretty bad" (e.g., 50% similar)
-    // and 0.2 or more is "very different" (e.g., 0% similar).
-    const similarity = Math.max(0, 100 - (averageDistance * 500)); // Multiplier 500 is a magic number
-
-    return similarity;
+    return { rawDifference: averageDifference, similarity: similarity };
 }
