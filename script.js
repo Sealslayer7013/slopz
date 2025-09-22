@@ -10,6 +10,10 @@ const debugPanel = document.getElementById('debugPanel');
 const debugText = document.getElementById('debugText');
 const resultsVideo = document.getElementById('resultsVideo');
 const resultsCanvas = document.getElementById('resultsCanvas');
+const totalFrames = document.getElementById('totalFrames');
+const videoTime = document.getElementById('videoTime');
+const currentFrame = document.getElementById('currentFrame');
+const frameDataStatus = document.getElementById('frameDataStatus');
 
 // Initialize MediaPipe Pose
 const pose = new Pose({
@@ -44,6 +48,8 @@ let processingPromise = null;
 function onPoseResults(results) {
     // Store the entire landmarks object for each frame
     allFrameLandmarks.push(results.poseLandmarks);
+    // Update diagnostic panel
+    totalFrames.innerHTML = allFrameLandmarks.length;
 }
 
 analyzeBtn.addEventListener('click', () => {
@@ -222,6 +228,11 @@ function drawLoop() {
 
     const frameIndex = Math.floor(video.currentTime * 30); // Assuming 30fps
     const landmarks = allFrameLandmarks[frameIndex];
+
+    // Update diagnostics
+    videoTime.innerHTML = video.currentTime.toFixed(2);
+    currentFrame.innerHTML = frameIndex;
+    frameDataStatus.innerHTML = landmarks ? 'Yes' : 'No';
 
     canvasCtx.clearRect(0, 0, resultsCanvas.width, resultsCanvas.height);
 

@@ -31,6 +31,14 @@
                 <h2>Advanced Analytics</h2>
                 <pre id="debugText"></pre>
             </div>
+
+            <div id="diagnosticPanel">
+                <h3>Diagnostics</h3>
+                <p>Frames Analyzed: <span id="totalFrames">0</span></p>
+                <p>Current Video Time: <span id="videoTime">0.00</span></p>
+                <p>Current Drawing Frame Index: <span id="currentFrame">0</span></p>
+                <p>Landmarks Found for Current Frame?: <span id="frameDataStatus">No</span></p>
+            </div>
         </main>
         <video id="inputVideo" style="display: none;"></video>
         <canvas id="outputCanvas" style="display: none;"></canvas>
