@@ -15,6 +15,8 @@ const videoTime = document.getElementById('videoTime');
 const currentFrame = document.getElementById('currentFrame');
 const frameDataStatus = document.getElementById('frameDataStatus');
 
+const SKI_LANDMARK_INDICES = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
+
 // Initialize MediaPipe Pose
 const pose = new Pose({
     locateFile: (file) => {
@@ -46,8 +48,24 @@ let allFrameLandmarks = [];
 let processingPromise = null;
 
 function onPoseResults(results) {
-    // Store the entire landmarks object for each frame
-    allFrameLandmarks.push(results.poseLandmarks);
+    if (results.poseLandmarks) {
+        // Create a copy of the landmarks so we can modify it.
+        const cleanedLandmarks = [...results.poseLandmarks];
+
+        // Loop through all 33 landmarks in the copy.
+        for (let i = 0; i < cleanedLandmarks.length; i++) {
+            // If the current landmark's index is NOT in our "keep" list...
+            if (!SKI_LANDMARK_INDICES.includes(i)) {
+                // ...replace its data with null.
+                cleanedLandmarks[i] = null;
+            }
+        }
+        // Add the cleaned list of landmarks to our main data set.
+        allFrameLandmarks.push(cleanedLandmarks);
+    } else {
+        // If no landmarks are found, push null to keep the frame count accurate.
+        allFrameLandmarks.push(null);
+    }
     // Update diagnostic panel
     totalFrames.innerHTML = allFrameLandmarks.length;
 }
