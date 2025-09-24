@@ -67,7 +67,6 @@ videoUpload.addEventListener('change', (event) => {
 });
 
 let allFrameLandmarks = [];
-let processingPromise = null;
 
 function onPoseResults(results) {
     if (results.poseLandmarks) {
@@ -145,7 +144,7 @@ async function processVideo() {
         video.currentTime = 0;
     }).then(() => {
         // 4. Analysis is complete, now show the results.
-        console.log("Step 1: Video analysis complete. Total frames processed:", allFrameLandmarks.length);
+        console.log('Analysis complete. Preparing results player...');
 
         // Update pro frames diagnostic
         proFrames.innerHTML = proTurnData.length;
@@ -155,18 +154,20 @@ async function processVideo() {
         const feedback = generateFeedback(metrics);
 
         // --- Pro Model Comparison ---
-        console.log("Step 3: Starting Pro Model comparison loop.");
         const frameScores = [];
         for (let i = 0; i < allFrameLandmarks.length; i++) {
             const proFrameIndex = i % proTurnData.length;
             const userPose = allFrameLandmarks[i];
             const proPose = proTurnData[proFrameIndex];
-            const result = calculatePoseSimilarity(userPose, proPose);
-            frameScores.push(result.similarity);
 
-            // Update live diagnostics for the last processed frame
-            rawDifference.innerHTML = result.rawDifference.toFixed(4);
-            frameSimilarity.innerHTML = result.similarity.toFixed(2);
+            if (userPose && proPose) {
+                const result = calculatePoseSimilarity(userPose, proPose);
+                frameScores.push(result.similarity);
+
+                // Update live diagnostics for the last processed frame
+                rawDifference.innerHTML = result.rawDifference.toFixed(4);
+                frameSimilarity.innerHTML = result.similarity.toFixed(2);
+            }
         }
         const averageScore = frameScores.reduce((a, b) => a + b, 0) / (frameScores.length || 1);
         console.log(`Average Pro Similarity Score: ${averageScore}`);
@@ -178,7 +179,6 @@ async function processVideo() {
         debugText.innerText = JSON.stringify(metrics, null, 2);
 
         // Set up the results video player
-        console.log("Step 2: Preparing to load video into results player.");
         const videoUrl = URL.createObjectURL(uploadedFile);
         resultsVideo.src = videoUrl;
 
@@ -279,7 +279,6 @@ toggleDebugBtn.addEventListener('click', () => {
 });
 
 function drawLoop() {
-    console.log("Step 4: drawLoop() function is running.");
     const canvasCtx = resultsCanvas.getContext('2d');
 
     // Calculate the current frame index
