@@ -15,7 +15,6 @@
             <section class="upload-section">
                 <label for="videoUpload">Upload Your Ski Video</label>
                 <input type="file" id="videoUpload" name="videoUpload" accept="video/*">
-                <button id="analyzeBtn">Analyze My Form</button>
             </section>
             <section id="resultsSection">
                 <div id="videoPlayerContainer">
@@ -27,26 +26,7 @@
                 <h2 id="similarity-score">Pro Similarity Score: --%</h2>
             </section>
 
-            <button id="toggleDebugBtn">Show Advanced Analytics</button>
-            <div id="debugPanel">
-                <h2>Advanced Analytics</h2>
-                <pre id="debugText"></pre>
-            </div>
-
-            <div id="diagnosticPanel">
-                <h3>Diagnostics</h3>
-                <p>Frames Analyzed: <span id="totalFrames">0</span></p>
-                <p>Current Video Time: <span id="videoTime">0.00</span></p>
-                <p>Current Drawing Frame Index: <span id="currentFrame">0</span></p>
-                <p>Landmarks Found for Current Frame?: <span id="frameDataStatus">No</span></p>
-                <hr>
-                <p>Frames in Pro Model: <span id="proFrames">0</span></p>
-                <p>Raw Difference Score (Last Frame): <span id="rawDifference">--</span></p>
-                <p>Similarity Score (Last Frame): <span id="frameSimilarity">--</span>%</p>
-            </div>
         </main>
-        <video id="inputVideo" style="display: none;"></video>
-        <canvas id="outputCanvas" style="display: none;"></canvas>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js" crossorigin="anonymous"></script>
