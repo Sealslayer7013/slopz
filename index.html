@@ -1,53 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Ski Coach</title>
-    <link rel="stylesheet" href="style.css">
+  <title>AI Ski Coach</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app-container">
-        <header>
-            <h1>AI Ski Coach</h1>
-        </header>
-        <main>
-            <section class="upload-section">
-                <label for="videoUpload">Upload Your Ski Video</label>
-                <input type="file" id="videoUpload" name="videoUpload" accept="video/*">
-            </section>
-            <section id="resultsSection" class="hidden">
-              <h2>Analysis Results</h2>
+  <h1>AI Ski Coach</h1>
+  <p>Upload your ski video. The AI will analyze it when you press play.</p>
+  <input type="file" id="videoUpload" accept="video/*">
 
-              <div id="videoPlayerContainer">
-                <video id="resultsVideo" controls></video>
-                <canvas id="resultsCanvas"></canvas>
-              </div>
+  <div id="playerContainer" class="hidden">
+    <video id="resultsVideo" controls></video>
+    <canvas id="resultsCanvas"></canvas>
+  </div>
 
-              <h2 id="similarity-score">Pro Similarity Score: --%</h2>
-              <div id="feedbackText"></div>
-
-              <button id="toggleDebugBtn">Show Advanced Analytics</button>
-
-              <div id="debugPanel" class="hidden">
-                <h3>Advanced Analytics (Live Data)</h3>
-                <p>Knee Bend Angle: <span id="kneeAngleValue">--</span> degrees</p>
-                <p>Torso Angle: <span id="torsoAngleValue">--</span> degrees</p>
-                <p>Upper/Lower Body Separation: <span id="separationValue">--</span> degrees</p>
-              </div>
-
-              <div id="diagnosticPanel">
-                <h3>Diagnostics</h3>
-                <p>Current Video Time: <span id="videoTime">0.00</span></p>
-                <p>Landmarks Found?: <span id="frameDataStatus">No</span></p>
-              </div>
-            </section>
-
-        </main>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js" crossorigin="anonymous"></script>
-    <script type="module" src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapose/pose/pose.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapose/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>

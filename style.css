@@ -1,45 +1,19 @@
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #f0f2f5;
-    margin: 0;
-    padding: 20px;
-    display: flex;
-    justify-content: center;
+  font-family: sans-serif;
+  text-align: center;
+  padding: 2em;
 }
-
-.app-container {
-    background-color: #ffffff;
-    padding: 40px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    width: 100%;
-    max-width: 800px;
+.hidden {
+  display: none;
 }
-
-h1, h2, h3 {
-    color: #1c1e21;
-}
-
-.upload-section {
-    margin-bottom: 30px;
-}
-
-#resultsSection {
-    text-align: center;
-}
-
-.hidden { display: none; }
-
-#videoPlayerContainer {
+#playerContainer {
   position: relative;
   width: 100%;
   max-width: 640px;
   aspect-ratio: 16 / 9;
-  margin: auto;
+  margin: 20px auto;
   background-color: #000;
 }
-
 #resultsVideo, #resultsCanvas {
   position: absolute;
   top: 0;
@@ -47,29 +21,5 @@ h1, h2, h3 {
   width: 100%;
   height: 100%;
 }
-
 #resultsVideo { z-index: 1; }
-#resultsCanvas {
-    z-index: 2;
-    pointer-events: none;
-}
-
-#debugPanel, #diagnosticPanel {
-  padding: 15px;
-  margin-top: 20px;
-  max-width: 640px;
-  margin-left: auto;
-  margin-right: auto;
-  text-align: left;
-  border-radius: 5px;
-}
-
-#debugPanel {
-  background-color: #f0f0f0;
-  border: 1px solid #ccc;
-}
-
-#diagnosticPanel {
-  background-color: #fff0f0;
-  border: 1px solid red;
-}
+#resultsCanvas { z-index: 2; }
