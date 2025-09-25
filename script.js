@@ -31,10 +31,9 @@ pose.onResults(onResults);
 videoUpload.addEventListener('change', (event) => {
   const file = event.target.files[0];
   if (file) {
-    resultsSection.style.display = 'block';
     resultsVideo.src = URL.createObjectURL(file);
+    resultsSection.classList.remove('hidden');
     feedbackText.innerHTML = "Video loaded. Press play to begin analysis.";
-    feedbackText.style.display = 'block';
   }
 });
 

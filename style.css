@@ -45,7 +45,6 @@ input[type="file"] {
 }
 
 #resultsSection {
-    display: none;
     margin-top: 30px;
     text-align: left;
     padding: 20px;
@@ -64,28 +63,27 @@ h2 {
 }
 
 #videoPlayerContainer {
-    position: relative;
-    width: 100%;
-    max-width: 480px; /* Or adjust as needed */
-    margin: 0 auto 20px auto;
-    background: #000;
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  aspect-ratio: 16 / 9;
+  margin: auto;
+  background-color: #000;
 }
 
-#resultsVideo {
+#resultsVideo, #resultsCanvas {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 1;
 }
 
 #resultsCanvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
     z-index: 2; /* Sits on top of the video */
     pointer-events: none; /* Allows clicks to go through to video controls */
+}
+
+.hidden {
+  display: none;
 }
