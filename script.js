@@ -27,11 +27,13 @@ videoUpload.addEventListener('change', (event) => {
 });
 
 resultsVideo.addEventListener('play', () => {
+    // This function will run repeatedly as the video plays
     const processVideo = async () => {
         if (resultsVideo.paused || resultsVideo.ended) {
             return;
         }
         await pose.send({ image: resultsVideo });
+        // Call the next frame
         requestAnimationFrame(processVideo);
     };
     requestAnimationFrame(processVideo);
