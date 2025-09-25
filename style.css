@@ -2,11 +2,9 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: #f0f2f5;
     margin: 0;
-    padding: 0;
+    padding: 20px;
     display: flex;
     justify-content: center;
-    align-items: center;
-    height: 100vh;
 }
 
 .app-container {
@@ -16,51 +14,22 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     text-align: center;
     width: 100%;
-    max-width: 500px;
+    max-width: 800px;
 }
 
-h1 {
+h1, h2, h3 {
     color: #1c1e21;
-    margin-bottom: 30px;
 }
 
 .upload-section {
     margin-bottom: 30px;
 }
 
-label {
-    display: block;
-    margin-bottom: 15px;
-    font-weight: bold;
-    color: #333;
-}
-
-input[type="file"] {
-    display: block;
-    margin: 0 auto 20px auto;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    width: 95%;
-}
-
 #resultsSection {
-    margin-top: 30px;
-    text-align: left;
-    padding: 20px;
-    border: 1px solid #e0e0e0;
-    border-radius: 5px;
+    text-align: center;
 }
 
-h2 {
-    color: #333;
-    margin-top: 0;
-}
-
-#feedbackText {
-    color: #555;
-    white-space: pre-wrap; /* To respect newlines in the feedback string */
-}
+.hidden { display: none; }
 
 #videoPlayerContainer {
   position: relative;
@@ -72,18 +41,35 @@ h2 {
 }
 
 #resultsVideo, #resultsCanvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
+#resultsVideo { z-index: 1; }
 #resultsCanvas {
-    z-index: 2; /* Sits on top of the video */
-    pointer-events: none; /* Allows clicks to go through to video controls */
+    z-index: 2;
+    pointer-events: none;
 }
 
-.hidden {
-  display: none;
+#debugPanel, #diagnosticPanel {
+  padding: 15px;
+  margin-top: 20px;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+  border-radius: 5px;
+}
+
+#debugPanel {
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+}
+
+#diagnosticPanel {
+  background-color: #fff0f0;
+  border: 1px solid red;
 }

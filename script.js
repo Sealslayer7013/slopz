@@ -1,23 +1,20 @@
 import { proTurnData } from './pro_model.js';
 
-// --- Constants ---
+// --- Global Variables & Constants ---
 const SKI_LANDMARK_INDICES = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
-const SKI_SKELETON_CONNECTIONS = [
-    [11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [23, 24],
-    [11, 23], [12, 24], [23, 25], [25, 27], [24, 26], [26, 28]
-];
+const SKI_SKELETON_CONNECTIONS = [[11, 12], [23, 24], [11, 23], [12, 24], [23, 25], [24, 26], [25, 27], [26, 28], [11, 13], [12, 14], [13, 15], [14, 16]];
 
 // --- Get HTML Elements ---
 const videoUpload = document.getElementById('videoUpload');
 const resultsSection = document.getElementById('resultsSection');
 const resultsVideo = document.getElementById('resultsVideo');
 const resultsCanvas = document.getElementById('resultsCanvas');
-const feedbackText = document.getElementById('feedbackText');
-const similarityScoreElement = document.getElementById('similarity-score');
+const toggleDebugBtn = document.getElementById('toggleDebugBtn');
+const debugPanel = document.getElementById('debugPanel');
 
 // --- AI Model Setup ---
 const pose = new Pose({
-  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapose/pose/${file}`
+    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapose/pose/${file}`
 });
 pose.setOptions({
     modelComplexity: 1,
@@ -29,68 +26,102 @@ pose.onResults(onResults);
 
 // --- Event Listeners ---
 videoUpload.addEventListener('change', (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    resultsVideo.src = URL.createObjectURL(file);
-    resultsSection.classList.remove('hidden');
-    feedbackText.innerHTML = "Video loaded. Press play to begin analysis.";
-  }
+    const file = event.target.files[0];
+    if (file) {
+        resultsSection.classList.remove('hidden');
+        resultsVideo.src = URL.createObjectURL(file);
+    }
 });
 
 resultsVideo.addEventListener('play', () => {
-  feedbackText.style.display = 'none';
-  requestAnimationFrame(animationLoop);
+    requestAnimationFrame(animationLoop);
 });
+
+toggleDebugBtn.addEventListener('click', () => {
+    const isHidden = debugPanel.classList.toggle('hidden');
+    toggleDebugBtn.innerHTML = isHidden ? "Show Advanced Analytics" : "Hide Advanced Analytics";
+});
+
 
 // --- Core Functions ---
 async function animationLoop() {
-  if (resultsVideo.paused || resultsVideo.ended) {
-    feedbackText.style.display = 'block';
-    feedbackText.innerHTML = "Analysis paused. Press play to resume.";
-    return;
-  }
-  await pose.send({ image: resultsVideo });
-  requestAnimationFrame(animationLoop);
+    if (resultsVideo.paused || resultsVideo.ended) return;
+    await pose.send({ image: resultsVideo });
+    requestAnimationFrame(animationLoop);
 }
 
 function onResults(results) {
-  const canvasCtx = resultsCanvas.getContext('2d');
-  resultsCanvas.width = resultsVideo.videoWidth;
-  resultsCanvas.height = resultsVideo.videoHeight;
+    const canvasCtx = resultsCanvas.getContext('2d');
+    resultsCanvas.width = resultsVideo.videoWidth;
+    resultsCanvas.height = resultsVideo.videoHeight;
+    canvasCtx.clearRect(0, 0, resultsCanvas.width, resultsCanvas.height);
 
-  canvasCtx.clearRect(0, 0, resultsCanvas.width, resultsCanvas.height);
+    // Update diagnostics
+    document.getElementById('videoTime').innerHTML = resultsVideo.currentTime.toFixed(2);
+    document.getElementById('frameDataStatus').innerHTML = results.poseLandmarks ? 'Yes' : 'No';
 
-  if (results.poseLandmarks) {
-    // Draw the simplified skeleton
-    drawConnectors(canvasCtx, results.poseLandmarks, SKI_SKELETON_CONNECTIONS, {color: '#00FF00', lineWidth: 4});
-    const mainBodyLandmarks = SKI_LANDMARK_INDICES.map(i => results.poseLandmarks[i]).filter(lm => lm);
-    drawLandmarks(canvasCtx, mainBodyLandmarks, {color: '#FF0000', radius: 5});
+    if (results.poseLandmarks) {
+        // Draw the simplified skeleton
+        drawConnectors(canvasCtx, results.poseLandmarks, SKI_SKELETON_CONNECTIONS, { color: '#00FF00', lineWidth: 4 });
+        const mainLandmarks = SKI_LANDMARK_INDICES.map(i => results.poseLandmarks[i]);
+        drawLandmarks(canvasCtx, mainLandmarks, { color: '#FF0000', radius: 5 });
 
-    // Perform Live Pro Model Comparison
-    const frameIndex = Math.floor(resultsVideo.currentTime * 30);
-    const proFrameIndex = frameIndex % proTurnData.length;
-    const proPose = proTurnData[proFrameIndex];
-    const similarityResult = calculatePoseSimilarity(results.poseLandmarks, proPose);
+        // Perform and display live analysis
+        performLiveAnalysis(results.poseLandmarks);
+    }
+}
 
-    similarityScoreElement.innerHTML = "Pro Similarity Score: " + Math.round(similarityResult.similarity) + "%";
-  }
+function performLiveAnalysis(landmarks) {
+    // --- Advanced Analytics Panel ---
+    const leftHip = landmarks[23];
+    const leftKnee = landmarks[25];
+    const leftAnkle = landmarks[27];
+    const kneeAngle = calculateAngle(leftHip, leftKnee, leftAnkle);
+    document.getElementById('kneeAngleValue').innerHTML = Math.round(kneeAngle);
+
+    const rightHip = landmarks[24];
+    const rightShoulder = landmarks[12];
+    const torsoAngle = calculateAngle(rightShoulder, rightHip, {x: rightHip.x, y: rightHip.y - 1});
+    document.getElementById('torsoAngleValue').innerHTML = Math.round(torsoAngle);
+
+    const shoulderAngle = Math.atan2(rightShoulder.y - landmarks[11].y, rightShoulder.x - landmarks[11].x) * 180 / Math.PI;
+    const hipAngle = Math.atan2(rightHip.y - leftHip.y, rightHip.x - leftHip.x) * 180 / Math.PI;
+    const separation = Math.abs(shoulderAngle - hipAngle);
+    document.getElementById('separationValue').innerHTML = Math.round(separation);
+
+
+    // --- Pro Similarity Score ---
+    const frameIndex = Math.floor(resultsVideo.currentTime * 30); // Assuming 30fps
+    const proPose = proTurnData[frameIndex % proTurnData.length];
+    if (proPose) {
+        const similarity = calculatePoseSimilarity(landmarks, proPose);
+        document.getElementById('similarity-score').innerHTML = "Pro Similarity Score: " + Math.round(similarity.similarity) + "%";
+    }
 }
 
 // --- Helper Functions ---
-function calculatePoseSimilarity(poseA, poseB) {
-    if (!poseA || !poseB) return { rawDifference: 0, similarity: 0 };
-    let totalDifference = 0, landmarksCompared = 0;
+function calculateAngle(a, b, c) {
+    if (!a || !b || !c) return 0;
+    const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+    let angle = Math.abs(radians * 180.0 / Math.PI);
+    if (angle > 180.0) angle = 360 - angle;
+    return angle;
+}
 
+function calculatePoseSimilarity(poseA, poseB) {
+    let totalDifference = 0;
+    let landmarksCompared = 0;
     for (const index of SKI_LANDMARK_INDICES) {
         const markA = poseA[index];
         const markB = poseB[index];
         if (markA && markB) {
-            totalDifference += Math.sqrt(Math.pow(markA.x - markB.x, 2) + Math.pow(markA.y - markB.y, 2));
+            let diff = Math.sqrt(Math.pow(markA.x - markB.x, 2) + Math.pow(markA.y - markB.y, 2));
+            totalDifference += diff;
             landmarksCompared++;
         }
     }
     if (landmarksCompared === 0) return { rawDifference: 0, similarity: 0 };
-    const averageDifference = totalDifference / landmarksCompared;
-    const similarity = Math.max(0, 100 - (averageDifference * 200));
-    return { rawDifference: averageDifference, similarity: similarity };
+    const avgDiff = totalDifference / landmarksCompared;
+    const similarity = Math.max(0, 100 - (avgDiff * 200)); // Tune multiplier as needed
+    return { rawDifference: avgDiff, similarity: similarity };
 }
