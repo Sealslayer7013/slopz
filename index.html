@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Pose Test</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; text-align: center; }
+    #liveView {
+      position: relative;
+      display: inline-block;
+      border: 1px solid #555;
+      max-width: 100%;
+    }
+    .videoView { display: block; width: 100%; height: auto; }
+    .layer { position: absolute; top: 0; left: 0; }
+    #status {
+      margin: 1em 0;
+      padding: 0.5em;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .status-loading { background-color: #f0f8ff; color: #0066cc; }
+    .status-ready { background-color: #f0fff0; color: #006600; }
+    .status-error { background-color: #fff0f0; color: #cc0000; }
+  </style>
+</head>
+<body>
+  <h1>AI Can See Your Dots!</h1>
+<div id="status">Initializing...</div>
+<h2 id="feedback">Knee Angle: --</h2>   
+  <div id="liveView">
+    <video id="webcam" class="videoView" autoplay playsinline></video>
+    <canvas id="output_canvas" class="layer"></canvas>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
