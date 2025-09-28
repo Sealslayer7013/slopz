@@ -33,15 +33,32 @@ function checkBrowserSupport() {
     errors.push("Webcam access not supported");
   }
 
-  if (!window.MediaPipe || !window.Pose) {
-    errors.push("MediaPipe pose detection not available");
-  }
-
   if (!HTMLCanvasElement.prototype.getContext) {
     errors.push("Canvas not supported");
   }
 
   return errors;
+}
+
+// Wait for MediaPipe libraries to load
+function waitForMediaPipe() {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    const maxAttempts = 50; // 5 seconds max wait
+
+    const checkForMediaPipe = () => {
+      if (window.Pose && window.Camera && window.drawConnectors && window.drawLandmarks && window.POSE_CONNECTIONS) {
+        resolve();
+      } else if (attempts >= maxAttempts) {
+        reject(new Error("MediaPipe libraries failed to load"));
+      } else {
+        attempts++;
+        setTimeout(checkForMediaPipe, 100);
+      }
+    };
+
+    checkForMediaPipe();
+  });
 }
 
 // Status update helper
@@ -165,6 +182,11 @@ async function initializeApp() {
       handleError(new Error("Browser not compatible"), compatibilityErrors.join(", "));
       return;
     }
+
+    updateStatus("Loading MediaPipe libraries...", 'loading');
+
+    // Wait for MediaPipe libraries to load
+    await waitForMediaPipe();
 
     updateStatus("Loading AI model...", 'loading');
 
