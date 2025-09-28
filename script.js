@@ -47,10 +47,24 @@ function waitForMediaPipe() {
     const maxAttempts = 50; // 5 seconds max wait
 
     const checkForMediaPipe = () => {
-      if (window.Pose && window.Camera && window.drawConnectors && window.drawLandmarks && window.POSE_CONNECTIONS) {
+      // Check for the actual objects MediaPipe exposes
+      const hasCamera = typeof window.Camera === 'function';
+      const hasPose = typeof window.Pose === 'function';
+      const hasDrawingUtils = typeof window.drawConnectors === 'function' && typeof window.drawLandmarks === 'function';
+      const hasConnections = typeof window.POSE_CONNECTIONS !== 'undefined';
+
+      console.log('MediaPipe check:', { hasCamera, hasPose, hasDrawingUtils, hasConnections });
+
+      if (hasCamera && hasPose && hasDrawingUtils && hasConnections) {
+        console.log('All MediaPipe libraries loaded successfully');
         resolve();
       } else if (attempts >= maxAttempts) {
-        reject(new Error("MediaPipe libraries failed to load"));
+        const missing = [];
+        if (!hasCamera) missing.push('Camera');
+        if (!hasPose) missing.push('Pose');
+        if (!hasDrawingUtils) missing.push('Drawing utilities');
+        if (!hasConnections) missing.push('Pose connections');
+        reject(new Error(`MediaPipe libraries failed to load. Missing: ${missing.join(', ')}`));
       } else {
         attempts++;
         setTimeout(checkForMediaPipe, 100);
